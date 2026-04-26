@@ -12,172 +12,20 @@
         <!-- ШАПКА -->
         <div class="header">
             <h1>⚔️ Фэнтези Арена</h1>
-            <div class="coins" id="coinsDisplay">💰 Загрузка...</div>
+            <div id="coinsDisplay">💰 Загрузка...</div>
         </div>
 
         <!-- ВКЛАДКИ -->
-        <div class="tabs">
+        <div class="tabs" id="mainTabs">
             <button class="tab-btn active" data-tab="games">🎮 Игры</button>
             <button class="tab-btn" data-tab="actions">⚡ Действия</button>
-            <button class="tab-btn" data-tab="economy">💰 Экономика</button>
+            <button class="tab-btn" data-tab="shop">🛒 Магазин</button>
+            <button class="tab-btn" data-tab="business">💼 Бизнес</button>
             <button class="tab-btn" data-tab="profile">👤 Профиль</button>
         </div>
 
-        <!-- ========== ВКЛАДКА: ИГРЫ ========== -->
-        <div class="tab-content active" id="tab-games">
-            <!-- Главное меню игр -->
-            <div class="game-grid" id="gameGrid">
-                <div class="game-card" onclick="openGame('minesweeper')">
-                    <div class="emoji">💣</div>
-                    <div class="name">Сапёр</div>
-                    <div class="desc">Найди все мины!</div>
-                </div>
-                <div class="game-card" onclick="openGame('slots')">
-                    <div class="emoji">🎰</div>
-                    <div class="name">Слоты</div>
-                    <div class="desc">Три в ряд = джекпот!</div>
-                </div>
-                <div class="game-card" onclick="openGame('dice')">
-                    <div class="emoji">🎲</div>
-                    <div class="name">Кубик</div>
-                    <div class="desc">Угадай число 1-6</div>
-                </div>
-                <div class="game-card" onclick="openGame('coin')">
-                    <div class="emoji">🪙</div>
-                    <div class="name">Монетка</div>
-                    <div class="desc">Орёл или Решка</div>
-                </div>
-                <div class="game-card" onclick="openGame('roulette')">
-                    <div class="emoji">🎡</div>
-                    <div class="name">Рулетка</div>
-                    <div class="desc">Крути барабан!</div>
-                </div>
-                <div class="game-card" onclick="openGame('va_bank')">
-                    <div class="emoji">💎</div>
-                    <div class="name">Ва-Банк</div>
-                    <div class="desc">Всё или ничего!</div>
-                </div>
-            </div>
-
-            <!-- Экран игры -->
-            <div id="gameScreen" style="display:none;"></div>
-        </div>
-
-        <!-- ========== ВКЛАДКА: ДЕЙСТВИЯ ========== -->
-        <div class="tab-content" id="tab-actions">
-            <div class="section-title">⚔️ Боевые действия</div>
-            <div class="quick-actions">
-                <button class="action-btn" onclick="sendResult('adventure')">
-                    <span class="emoji">⚔️</span> Приключения
-                </button>
-                <button class="action-btn" onclick="sendResult('boss')">
-                    <span class="emoji">👹</span> Атака босса
-                </button>
-                <button class="action-btn" onclick="sendResult('duel')">
-                    <span class="emoji">🤺</span> Дуэль
-                </button>
-                <button class="action-btn" onclick="sendResult('pvp')">
-                    <span class="emoji">🏟</span> PvP Арена
-                </button>
-            </div>
-
-            <div class="section-title">🛒 Магазин</div>
-            <div class="quick-actions">
-                <button class="action-btn" onclick="sendResult('shop_weapons')">
-                    <span class="emoji">⚔️</span> Оружие
-                </button>
-                <button class="action-btn" onclick="sendResult('shop_armor')">
-                    <span class="emoji">🛡</span> Броня
-                </button>
-                <button class="action-btn" onclick="sendResult('shop_potions')">
-                    <span class="emoji">🧪</span> Зелья
-                </button>
-                <button class="action-btn" onclick="sendResult('shop_spells')">
-                    <span class="emoji">📜</span> Заклинания
-                </button>
-            </div>
-
-            <div class="section-title">👤 Персонаж</div>
-            <div class="quick-actions">
-                <button class="action-btn" onclick="sendResult('equipment')">
-                    <span class="emoji">🛡</span> Экипировка
-                </button>
-                <button class="action-btn" onclick="sendResult('inventory')">
-                    <span class="emoji">🎒</span> Инвентарь
-                </button>
-                <button class="action-btn" onclick="sendResult('spells')">
-                    <span class="emoji">🔮</span> Заклинания
-                </button>
-                <button class="action-btn" onclick="sendResult('achievements')">
-                    <span class="emoji">🏆</span> Достижения
-                </button>
-            </div>
-        </div>
-
-        <!-- ========== ВКЛАДКА: ЭКОНОМИКА ========== -->
-        <div class="tab-content" id="tab-economy">
-            <div class="section-title">💼 Бизнес</div>
-            <div class="quick-actions">
-                <button class="action-btn" onclick="sendResult('my_business')">
-                    <span class="emoji">🏢</span> Мой бизнес
-                </button>
-                <button class="action-btn" onclick="sendResult('businesses')">
-                    <span class="emoji">💼</span> Все бизнесы
-                </button>
-                <button class="action-btn" onclick="sendResult('my_farm')">
-                    <span class="emoji">🚜</span> Моя ферма
-                </button>
-                <button class="action-btn" onclick="sendResult('farms')">
-                    <span class="emoji">🌾</span> Все фермы
-                </button>
-            </div>
-
-            <div class="section-title">⛏️ Добыча</div>
-            <div class="quick-actions">
-                <button class="action-btn" onclick="sendResult('my_mine')">
-                    <span class="emoji">⛏️</span> Моя шахта
-                </button>
-                <button class="action-btn" onclick="sendResult('mines')">
-                    <span class="emoji">💎</span> Все шахты
-                </button>
-                <button class="action-btn" onclick="sendResult('exchange')">
-                    <span class="emoji">📈</span> Биржа
-                </button>
-                <button class="action-btn" onclick="sendResult('backpack')">
-                    <span class="emoji">🎒</span> Рюкзак
-                </button>
-            </div>
-
-            <div class="section-title">🏦 Финансы</div>
-            <div class="quick-actions">
-                <button class="action-btn" onclick="sendResult('bank')">
-                    <span class="emoji">🏦</span> Банк
-                </button>
-                <button class="action-btn" onclick="sendResult('blacksmith')">
-                    <span class="emoji">🔨</span> Кузница
-                </button>
-                <button class="action-btn" onclick="sendResult('laboratory')">
-                    <span class="emoji">🧪</span> Лаборатория
-                </button>
-                <button class="action-btn" onclick="sendResult('transfer')">
-                    <span class="emoji">💸</span> Передать
-                </button>
-            </div>
-        </div>
-
-        <!-- ========== ВКЛАДКА: ПРОФИЛЬ ========== -->
-        <div class="tab-content" id="tab-profile">
-            <div class="profile-card">
-                <div class="profile-stats" id="profileStats">
-                    <p>👤 <b id="profileName">Игрок</b></p>
-                    <p>🎯 Уровень: <b id="profileLevel">1</b></p>
-                    <p>💰 Баланс: <b id="profileBalance">0 🪙</b></p>
-                    <p>💎 Кристаллы: <b id="profileCrystals">0</b></p>
-                    <p>⚔️ Атака: <b id="profileAttack">10</b></p>
-                    <p>🛡 Защита: <b id="profileDefense">5</b></p>
-                </div>
-            </div>
-        </div>
+        <!-- КОНТЕНТ -->
+        <div id="tabContent"></div>
     </div>
 
     <script src="app.js"></script>
