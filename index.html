@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Фэнтези Арена</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <div class="header">
+            <h1>⚔️ Фэнтези Арена</h1>
+            <div class="coins" id="coinsDisplay">💰 Загрузка...</div>
+        </div>
+
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="games">🎮 Игры</button>
+            <button class="tab-btn" data-tab="actions">⚡ Действия</button>
+            <button class="tab-btn" data-tab="profile">👤 Профиль</button>
+        </div>
+
+        <!-- Вкладка ИГРЫ -->
+        <div class="tab-content active" id="tab-games">
+            <div class="game-grid" id="gameGrid">
+                <!-- Сапёр -->
+                <div class="game-card" data-game="minesweeper">
+                    <div class="emoji">💣</div>
+                    <div class="name">Сапёр</div>
+                    <div class="desc">Найди все мины!</div>
+                </div>
+                <!-- Слоты -->
+                <div class="game-card">
+                    <div class="emoji">🎰</div>
+                    <div class="name">Слоты</div>
+                    <div class="desc">Скоро...</div>
+                </div>
+                <!-- Кубик -->
+                <div class="game-card">
+                    <div class="emoji">🎲</div>
+                    <div class="name">Кубик</div>
+                    <div class="desc">Скоро...</div>
+                </div>
+                <!-- Монетка -->
+                <div class="game-card">
+                    <div class="emoji">🪙</div>
+                    <div class="name">Монетка</div>
+                    <div class="desc">Скоро...</div>
+                </div>
+            </div>
+
+            <!-- Экран Сапёра -->
+            <div id="minesweeperScreen" style="display:none;">
+                <button class="btn-back" onclick="closeMinesweeper()">← Назад к играм</button>
+                <div class="minesweeper-container">
+                    <div class="ms-controls">
+                        <div class="ms-info">
+                            🚩 <span id="msFlags">0</span>
+                            💣 <span id="msMines">10</span>
+                        </div>
+                        <div class="ms-bet-group">
+                            <input type="number" id="msBet" value="100" min="10">
+                            <button class="set-btn" onclick="setMinesweeperBet()">Ставка</button>
+                        </div>
+                        <div class="ms-difficulty">
+                            <button class="active" data-size="8" data-mines="10">8×8</button>
+                            <button data-size="10" data-mines="15">10×10</button>
+                            <button data-size="12" data-mines="20">12×12</button>
+                        </div>
+                    </div>
+                    <div class="ms-board" id="msBoard"></div>
+                    <div id="msGameOver"></div>
+                    <button class="new-game-btn" id="msNewGame" onclick="startMinesweeper()" style="display:none;">🔄 Новая игра</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка ДЕЙСТВИЯ -->
+        <div class="tab-content" id="tab-actions">
+            <div class="quick-actions">
+                <button class="action-btn" onclick="sendAction('daily_bonus')">
+                    <span class="emoji">🎁</span> Ежедневный бонус
+                </button>
+                <button class="action-btn" onclick="sendAction('work')">
+                    <span class="emoji">💼</span> Подработка
+                </button>
+                <button class="action-btn" onclick="sendAction('profile')">
+                    <span class="emoji">👤</span> Профиль
+                </button>
+                <button class="action-btn" onclick="sendAction('shop')">
+                    <span class="emoji">🏪</span> Магазин
+                </button>
+                <button class="action-btn" onclick="sendAction('inventory')">
+                    <span class="emoji">🎒</span> Инвентарь
+                </button>
+                <button class="action-btn" onclick="sendAction('adventure')">
+                    <span class="emoji">⚔️</span> Приключения
+                </button>
+            </div>
+        </div>
+
+        <!-- Вкладка ПРОФИЛЬ -->
+        <div class="tab-content" id="tab-profile">
+            <div class="profile-card">
+                <p id="profileInfo">Загрузка данных профиля...</p>
+                <button class="new-game-btn" style="margin-top: 15px;" onclick="sendAction('profile')">📊 Открыть полный профиль</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
