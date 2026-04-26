@@ -3,72 +3,54 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-// Данные пользователя
 const user = tg.initDataUnsafe?.user || {};
+let userBalance = 0;
+let userLevel = 1;
+let userCrystals = 0;
+let userAttack = 10;
+let userDefense = 5;
 
-// Состояние
-let currentTab = 'games';
-let userBalance = user?.coins || 0;
-let userLevel = user?.level || 1;
+// ============ СОСТОЯНИЕ ИГР ============
+let currentGame = '';
 
 // Сапёр
-let msBoard = [];
-let msSize = 8;
-let msMinesCount = 10;
-let msBet = 100;
-let msFlagsPlaced = 0;
-let msRevealed = 0;
-let msGameOver = false;
+let msBoard = [], msSize = 8, msMinesCount = 10, msBet = 100;
+let msFlagsPlaced = 0, msRevealed = 0, msGameOver = false;
+
+// Слоты
+const slotSymbols = ['🍒', '🍊', '🍋', '🍉', '⭐', '7️⃣', '🔔', '💎'];
+let slotsBet = 100, slotsSpinning = false;
 
 // ============ ЗАГРУЗКА ============
 document.addEventListener('DOMContentLoaded', () => {
-    // Загружаем данные пользователя
-    loadUserData();
-
-    // Вкладки
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Карточки игр
-    document.querySelectorAll('.game-card[data-game]').forEach(card => {
-        card.addEventListener('click', () => {
-            if (card.dataset.game === 'minesweeper') openMinesweeper();
-        });
-    });
-
-    // Сложность Сапёра
-    document.querySelectorAll('.ms-difficulty button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.ms-difficulty button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            msSize = parseInt(btn.dataset.size);
-            msMinesCount = parseInt(btn.dataset.mines);
-            document.getElementById('msMines').textContent = msMinesCount;
-            startMinesweeper();
-        });
-    });
-
-    // Главная кнопка
     tg.MainButton.setText('Закрыть');
     tg.MainButton.onClick(() => tg.close());
     tg.MainButton.show();
+
+    updateDisplay();
 });
 
-// ============ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ============
-function loadUserData() {
-    tg.sendData(JSON.stringify({ action: 'get_profile' }));
-    updateDisplay();
-}
-
+// ============ ДИСПЛЕЙ ============
 function updateDisplay() {
-    document.getElementById('coinsDisplay').textContent = `💰 ${formatNumber(userBalance)} 🪙 | 🎯 Ур. ${userLevel}`;
+    document.getElementById('coinsDisplay').textContent =
+        `💰 ${formatNum(userBalance)} 🪙 | 💎 ${userCrystals} | 🎯 Ур. ${userLevel}`;
+
+    document.getElementById('profileName').textContent = user.first_name || 'Игрок';
+    document.getElementById('profileLevel').textContent = userLevel;
+    document.getElementById('profileBalance').textContent = formatNum(userBalance) + ' 🪙';
+    document.getElementById('profileCrystals').textContent = userCrystals;
+    document.getElementById('profileAttack').textContent = userAttack;
+    document.getElementById('profileDefense').textContent = userDefense;
 }
 
-function formatNumber(num) {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'М';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'К';
-    return String(num);
+function formatNum(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'М';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'К';
+    return String(n);
 }
 
 // ============ ВКЛАДКИ ============
@@ -77,203 +59,262 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
     document.getElementById(`tab-${tab}`).classList.add('active');
-    currentTab = tab;
 }
 
-// ============ ОТПРАВКА ДЕЙСТВИЙ ============
-function sendAction(action, extraData = {}) {
-    tg.sendData(JSON.stringify({
-        action: action,
-        ...extraData
-    }));
-    tg.close();
+// ============ ОТПРАВКА РЕЗУЛЬТАТА БОТУ ============
+function sendResult(type, data = {}) {
+    tg.sendData(JSON.stringify({ action: type, ...data }));
+}
+
+// ============ ОТКРЫТИЕ ИГРЫ ============
+function openGame(game) {
+    currentGame = game;
+    document.getElementById('gameGrid').style.display = 'none';
+
+    const screen = document.getElementById('gameScreen');
+    screen.style.display = 'block';
+
+    if (game === 'minesweeper') {
+        screen.innerHTML = `
+            <div class="game-header">
+                <button class="btn-back" onclick="closeGame()">← Назад</button>
+                <h2>💣 Сапёр</h2>
+            </div>
+            <div class="ms-controls">
+                <div class="ms-info">🚩 <span id="msFlags">0</span> 💣 <span id="msMines">10</span></div>
+                <div class="ms-bet-group">
+                    <input type="number" id="msBet" value="100" min="10">
+                    <button class="set-btn" onclick="setMsBet()">Ставка</button>
+                </div>
+                <div class="ms-difficulty">
+                    <button class="active" data-size="8" data-mines="10">8×8</button>
+                    <button data-size="10" data-mines="15">10×10</button>
+                    <button data-size="12" data-mines="20">12×12</button>
+                </div>
+            </div>
+            <div class="ms-board" id="msBoard"></div>
+            <div id="msResult"></div>
+            <button class="new-game-btn" id="msNewGame" onclick="startMinesweeper()" style="display:none;">🔄 Новая игра</button>
+        `;
+        startMinesweeper();
+        document.querySelectorAll('.ms-difficulty button').forEach(b => {
+            b.addEventListener('click', () => {
+                document.querySelectorAll('.ms-difficulty button').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                msSize = +b.dataset.size;
+                msMinesCount = +b.dataset.mines;
+                document.getElementById('msMines').textContent = msMinesCount;
+                startMinesweeper();
+            });
+        });
+
+    } else if (game === 'slots') {
+        screen.innerHTML = `
+            <div class="game-header">
+                <button class="btn-back" onclick="closeGame()">← Назад</button>
+                <h2>🎰 Слоты</h2>
+            </div>
+            <div class="slots-machine">
+                <div class="slots-reels">
+                    <div class="slot-reel" id="reel0">🍒</div>
+                    <div class="slot-reel" id="reel1">🍊</div>
+                    <div class="slot-reel" id="reel2">🍋</div>
+                </div>
+                <div class="bet-input-group">
+                    <label>💰 Ставка (🪙):</label>
+                    <input type="number" id="slotsBet" value="100" min="10">
+                </div>
+                <button class="play-btn-big" id="spinBtn" onclick="spinSlots()">🎰 КРУТИТЬ!</button>
+                <div id="slotsResult"></div>
+            </div>
+        `;
+
+    } else {
+        screen.innerHTML = `
+            <div class="game-header">
+                <button class="btn-back" onclick="closeGame()">← Назад</button>
+                <h2>🎮 ${game.toUpperCase()}</h2>
+            </div>
+            <p style="text-align:center; padding:40px;">🚧 Эта игра будет добавлена в следующем обновлении!</p>
+        `;
+    }
+}
+
+function closeGame() {
+    document.getElementById('gameGrid').style.display = 'grid';
+    document.getElementById('gameScreen').style.display = 'none';
+    currentGame = '';
 }
 
 // ============ САПЁР ============
-function openMinesweeper() {
-    document.getElementById('gameGrid').style.display = 'none';
-    document.getElementById('minesweeperScreen').style.display = 'block';
-    startMinesweeper();
-}
-
-function closeMinesweeper() {
-    document.getElementById('gameGrid').style.display = 'grid';
-    document.getElementById('minesweeperScreen').style.display = 'none';
-}
-
-function setMinesweeperBet() {
-    const input = document.getElementById('msBet');
-    let bet = parseInt(input.value);
-    if (isNaN(bet) || bet < 10) bet = 10;
-    msBet = bet;
-    input.value = msBet;
+function setMsBet() {
+    const inp = document.getElementById('msBet');
+    let v = parseInt(inp.value);
+    if (isNaN(v) || v < 10) v = 10;
+    msBet = v;
+    inp.value = v;
     startMinesweeper();
 }
 
 function startMinesweeper() {
-    msGameOver = false;
-    msFlagsPlaced = 0;
-    msRevealed = 0;
-    msBoard = [];
-
-    document.getElementById('msGameOver').innerHTML = '';
+    msGameOver = false; msFlagsPlaced = 0; msRevealed = 0; msBoard = [];
+    document.getElementById('msResult').innerHTML = '';
     document.getElementById('msNewGame').style.display = 'none';
     document.getElementById('msFlags').textContent = '0';
     document.getElementById('msMines').textContent = msMinesCount;
+    msBet = parseInt(document.getElementById('msBet')?.value) || 100;
 
-    const totalCells = msSize * msSize;
-    const minePositions = new Set();
-    
-    while (minePositions.size < msMinesCount) {
-        minePositions.add(Math.floor(Math.random() * totalCells));
-    }
+    const total = msSize * msSize;
+    const mines = new Set();
+    while (mines.size < msMinesCount) mines.add(Math.floor(Math.random() * total));
 
-    for (let i = 0; i < totalCells; i++) {
-        msBoard.push({
-            mine: minePositions.has(i),
-            revealed: false,
-            flagged: false,
-            adjacentMines: 0
-        });
-    }
+    for (let i = 0; i < total; i++)
+        msBoard.push({ mine: mines.has(i), revealed: false, flagged: false, adjacent: 0 });
 
-    // Считаем соседей
-    for (let i = 0; i < totalCells; i++) {
+    for (let i = 0; i < total; i++) {
         if (msBoard[i].mine) continue;
-        const neighbors = getNeighbors(i);
-        msBoard[i].adjacentMines = neighbors.filter(n => msBoard[n].mine).length;
+        msBoard[i].adjacent = getNeighbors(i).filter(n => msBoard[n].mine).length;
     }
-
-    renderBoard();
+    renderMSBoard();
 }
 
-function getNeighbors(index) {
-    const row = Math.floor(index / msSize);
-    const col = index % msSize;
-    const neighbors = [];
-
-    for (let dr = -1; dr <= 1; dr++) {
+function getNeighbors(i) {
+    const r = Math.floor(i / msSize), c = i % msSize, res = [];
+    for (let dr = -1; dr <= 1; dr++)
         for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue;
-            const nr = row + dr;
-            const nc = col + dc;
-            if (nr >= 0 && nr < msSize && nc >= 0 && nc < msSize) {
-                neighbors.push(nr * msSize + nc);
-            }
+            if (!dr && !dc) continue;
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < msSize && nc >= 0 && nc < msSize) res.push(nr * msSize + nc);
         }
-    }
-    return neighbors;
+    return res;
 }
 
-function renderBoard() {
-    const boardEl = document.getElementById('msBoard');
-    boardEl.style.gridTemplateColumns = `repeat(${msSize}, 36px)`;
-    boardEl.innerHTML = '';
-
-    msBoard.forEach((cell, index) => {
-        const cellEl = document.createElement('button');
-        cellEl.className = 'ms-cell';
-        
-        if (cell.revealed) {
-            cellEl.classList.add('revealed');
-            if (cell.mine) {
-                cellEl.classList.add('mine');
-                cellEl.textContent = '💣';
-            } else if (cell.adjacentMines > 0) {
-                cellEl.textContent = cell.adjacentMines;
-                const colors = ['', '#4ade80', '#facc15', '#f97316', '#ef4444', '#ec4899', '#a855f7', '#6366f1', '#14b8a6'];
-                cellEl.style.color = colors[cell.adjacentMines] || '#fff';
+function renderMSBoard() {
+    const el = document.getElementById('msBoard');
+    el.style.gridTemplateColumns = `repeat(${msSize}, 36px)`;
+    el.innerHTML = '';
+    msBoard.forEach((c, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'ms-cell';
+        if (c.revealed) {
+            btn.classList.add('revealed');
+            if (c.mine) { btn.classList.add('mine'); btn.textContent = '💣'; }
+            else if (c.adjacent > 0) {
+                btn.textContent = c.adjacent;
+                btn.style.color = ['','#4ade80','#facc15','#f97316','#ef4444','#ec4899','#a855f7','#6366f1','#14b8a6'][c.adjacent]||'#fff';
             }
-        } else if (cell.flagged) {
-            cellEl.classList.add('flag');
-            cellEl.textContent = '🚩';
-        }
-
-        cellEl.addEventListener('click', (e) => handleCellClick(index));
-        cellEl.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            handleRightClick(index);
-        });
-
-        boardEl.appendChild(cellEl);
+        } else if (c.flagged) { btn.classList.add('flag'); btn.textContent = '🚩'; }
+        btn.addEventListener('click', () => msClick(i));
+        btn.addEventListener('contextmenu', e => { e.preventDefault(); msRightClick(i); });
+        el.appendChild(btn);
     });
 }
 
-function handleCellClick(index) {
-    if (msGameOver || msBoard[index].flagged || msBoard[index].revealed) return;
-
-    revealCell(index);
-
-    if (msBoard[index].mine) {
-        gameOver(false);
-        return;
-    }
-
-    // Автораскрытие пустых
-    if (msBoard[index].adjacentMines === 0) {
-        const toReveal = [index];
-        const visited = new Set([index]);
-        
-        while (toReveal.length > 0) {
-            const current = toReveal.shift();
-            for (const n of getNeighbors(current)) {
-                if (visited.has(n)) continue;
-                visited.add(n);
+function msClick(i) {
+    if (msGameOver || msBoard[i].flagged || msBoard[i].revealed) return;
+    msReveal(i);
+    if (msBoard[i].mine) { msEnd(false); return; }
+    if (msBoard[i].adjacent === 0) {
+        const q = [i], v = new Set([i]);
+        while (q.length) {
+            for (const n of getNeighbors(q.shift())) {
+                if (v.has(n)) continue; v.add(n);
                 if (!msBoard[n].revealed && !msBoard[n].flagged && !msBoard[n].mine) {
-                    revealCell(n);
-                    if (msBoard[n].adjacentMines === 0) toReveal.push(n);
+                    msReveal(n);
+                    if (!msBoard[n].adjacent) q.push(n);
                 }
             }
         }
     }
-
-    checkWin();
-    renderBoard();
+    if (msRevealed === msSize * msSize - msMinesCount) msEnd(true);
+    renderMSBoard();
 }
 
-function revealCell(index) {
-    if (!msBoard[index].revealed) {
-        msBoard[index].revealed = true;
-        msRevealed++;
-    }
-}
+function msReveal(i) { if (!msBoard[i].revealed) { msBoard[i].revealed = true; msRevealed++; } }
 
-function handleRightClick(index) {
-    if (msGameOver || msBoard[index].revealed) return;
-    msBoard[index].flagged = !msBoard[index].flagged;
-    msFlagsPlaced += msBoard[index].flagged ? 1 : -1;
+function msRightClick(i) {
+    if (msGameOver || msBoard[i].revealed) return;
+    msBoard[i].flagged = !msBoard[i].flagged;
+    msFlagsPlaced += msBoard[i].flagged ? 1 : -1;
     document.getElementById('msFlags').textContent = msFlagsPlaced;
-    renderBoard();
+    renderMSBoard();
 }
 
-function checkWin() {
-    if (msRevealed === msSize * msSize - msMinesCount) {
-        gameOver(true);
-    }
-}
-
-function gameOver(won) {
+function msEnd(won) {
     msGameOver = true;
-    msBoard.forEach(cell => { if (cell.mine) cell.revealed = true; });
-    renderBoard();
-
-    const el = document.getElementById('msGameOver');
+    msBoard.forEach(c => { if (c.mine) c.revealed = true; });
+    renderMSBoard();
+    const el = document.getElementById('msResult');
     const btn = document.getElementById('msNewGame');
-    
     if (won) {
-        const reward = msBet * 2;
-        userBalance += reward;
-        el.className = 'ms-gameover win';
-        el.innerHTML = `🎉 <b>ПОБЕДА!</b><br>+${formatNumber(reward)} 🪙`;
-        tg.sendData(JSON.stringify({ action: 'minesweeper_win', bet: msBet, reward: reward }));
+        userBalance += msBet * 2;
+        el.className = 'ms-result win';
+        el.innerHTML = `🎉 <b>ПОБЕДА!</b> +${formatNum(msBet * 2)} 🪙`;
+        sendResult('game_result', { game: 'minesweeper', win: true, bet: msBet, reward: msBet * 2 });
     } else {
-        userBalance -= msBet;
-        if (userBalance < 0) userBalance = 0;
-        el.className = 'ms-gameover';
-        el.innerHTML = `💥 <b>МИНА!</b><br>-${formatNumber(msBet)} 🪙`;
-        tg.sendData(JSON.stringify({ action: 'minesweeper_lose', bet: msBet }));
+        userBalance -= msBet; if (userBalance < 0) userBalance = 0;
+        el.className = 'ms-result lose';
+        el.innerHTML = `💥 <b>МИНА!</b> -${formatNum(msBet)} 🪙`;
+        sendResult('game_result', { game: 'minesweeper', win: false, bet: msBet });
+    }
+    btn.style.display = 'block';
+    updateDisplay();
+}
+
+// ============ СЛОТЫ ============
+function spinSlots() {
+    if (slotsSpinning) return;
+    const betInp = document.getElementById('slotsBet');
+    slotsBet = parseInt(betInp.value) || 100;
+    if (slotsBet < 10) { alert('Мин. ставка: 10 🪙'); return; }
+    if (slotsBet > userBalance) { alert('Недостаточно монет!'); return; }
+
+    userBalance -= slotsBet;
+    updateDisplay();
+    slotsSpinning = true;
+    document.getElementById('spinBtn').disabled = true;
+    document.getElementById('slotsResult').innerHTML = '';
+
+    const reels = [document.getElementById('reel0'), document.getElementById('reel1'), document.getElementById('reel2')];
+    reels.forEach(r => r.classList.add('spinning'));
+
+    let spins = 0;
+    const maxSpins = 15;
+    const interval = setInterval(() => {
+        reels.forEach(r => r.textContent = slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+        spins++;
+        if (spins >= maxSpins) {
+            clearInterval(interval);
+            reels.forEach(r => r.classList.remove('spinning'));
+            finishSlots(reels);
+        }
+    }, 100);
+}
+
+function finishSlots(reels) {
+    const r0 = reels[0].textContent, r1 = reels[1].textContent, r2 = reels[2].textContent;
+    const resultEl = document.getElementById('slotsResult');
+    
+    if (r0 === r1 && r1 === r2) {
+        const mult = r0 === '💎' ? 10 : r0 === '7️⃣' ? 7 : r0 === '⭐' ? 3 : r0 === '🔔' ? 5 : 1.5;
+        const win = Math.floor(slotsBet * mult);
+        userBalance += win;
+        resultEl.className = 'slots-result win';
+        resultEl.innerHTML = `🎉 <b>ДЖЕКПОТ!</b> ${r0}${r1}${r2}<br>+${formatNum(win)} 🪙 (×${mult})`;
+        sendResult('game_result', { game: 'slots', win: true, bet: slotsBet, reward: win, combo: r0+r1+r2 });
+    } else if (r0 === r1 || r1 === r2 || r0 === r2) {
+        const win = Math.floor(slotsBet * 1.2);
+        userBalance += win;
+        resultEl.className = 'slots-result win';
+        resultEl.innerHTML = `👍 <b>Пара!</b> ${r0}${r1}${r2}<br>+${formatNum(win)} 🪙`;
+        sendResult('game_result', { game: 'slots', win: true, bet: slotsBet, reward: win, combo: r0+r1+r2 });
+    } else {
+        resultEl.className = 'slots-result lose';
+        resultEl.innerHTML = `😢 <b>Мимо!</b> ${r0}${r1}${r2}<br>-${formatNum(slotsBet)} 🪙`;
+        sendResult('game_result', { game: 'slots', win: false, bet: slotsBet });
     }
 
-    btn.style.display = 'block';
+    slotsSpinning = false;
+    document.getElementById('spinBtn').disabled = false;
     updateDisplay();
 }
